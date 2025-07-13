@@ -54,7 +54,19 @@ namespace dpp_structures {
         return r;
     }
 
+    inline std::string join_paths(const std::string& base, const std::string& add) {
+        bool baseEnds = base.ends_with('/');
+        bool addEnds = add.starts_with('/');
+        if (addEnds != baseEnds) return base + add;
+        if (!addEnds) return base + "/" + add;
+        else {
+            return base.substr(0, base.size() - 1) + add;
+        }
+    } 
+    
     std::vector<std::string> split_string(const std::string& str, const std::string& delimiter);
+    
+    
 
 }
 #endif//DPP_STRUCTURES_TEXT_H

@@ -31,7 +31,7 @@ namespace dpp_structures {
     };
 
 
-    class i_json_file : virtual public json_file_base {
+    class i_json_file : public json_file_base {
     protected:
         void read();
 
@@ -42,11 +42,11 @@ namespace dpp_structures {
 
         i_json_file() = default;
 
-        nlohmann::json operator()(const std::string& key, const std::string& _default = "");
+        std::optional<nlohmann::json> operator()(const std::string& key, const std::optional<std::string>& _default = std::nullopt);
 
-        [[nodiscard]] std::string get_string(const std::string& key, const std::string& _default = "");
+        [[nodiscard]] std::optional<std::string> get_string(const std::string& key, const std::optional<std::string>& _default = std::nullopt);
 
-        [[nodiscard]] nlohmann::json get_obj(const std::string& key, const nlohmann::json& _default = {});
+        [[nodiscard]] std::optional<nlohmann::json> get_obj(const std::string& key, const std::optional<std::string>& _default = std::nullopt);
     };
 
 

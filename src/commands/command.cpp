@@ -23,12 +23,17 @@ subcommand_group::subcommand_group(const std::string& name, const std::string& d
 }
 
 
-command::command(const std::string_view& _name, const std::string& _description, const dpp::snowflake& _application_id)
-	: slashcommand(std::string(_name), _description, _application_id) {}
+command::command(const std::string_view& name, const std::string& description, const dpp::snowflake& application_id,
+                 dpp::permission permissions)
+	: slashcommand(std::string(name), description, application_id) {
+    this->set_default_permissions(permissions);
+    this->default_member_permissions = permissions;
+}
 
-command::command(const std::string_view& _name, const std::string& _description, const dpp::snowflake& _application_id,
-				 const std::vector<subcommand_group>& subcommand_groups, const std::vector<subcommand>& subcommands)
-	: slashcommand(std::string(_name), _description, _application_id) {
+command::command(const std::string_view& name, const std::string& description, const dpp::snowflake& application_id,
+                 const std::vector<subcommand_group>& subcommand_groups, const std::vector<subcommand>& subcommands,
+                 dpp::permission permissions)
+	: command(std::string(name), description, application_id, permissions) {
 	for (auto& subcommand: subcommands) {
 		this->options.push_back(subcommand);
 		this->subcommands_map[subcommand.name] = subcommand;
@@ -40,9 +45,9 @@ command::command(const std::string_view& _name, const std::string& _description,
 	}
 }
 
-command::command(const std::string_view& _name, const std::string& _description, const dpp::snowflake& _application_id,
-				 const std::vector<dpp::command_option>& options)
-	: slashcommand(std::string(_name), _description, _application_id) {
+command::command(const std::string_view& name, const std::string& description, const dpp::snowflake& application_id,
+                 const std::vector<dpp::command_option>& options, dpp::permission permissions)
+	: command(std::string(name), description, application_id, permissions) {
 	this->options = options;
 }
 

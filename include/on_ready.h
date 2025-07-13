@@ -26,7 +26,7 @@ namespace dpp_structures {
          *
          * @see command_registerer
          */
-        virtual dpp::task<void> start(const dpp::ready_t& t) = 0;
+        virtual dpp::task<void> start(dpp::ready_t t) = 0;
     };
 }
 

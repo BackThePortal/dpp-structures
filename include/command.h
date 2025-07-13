@@ -22,7 +22,7 @@ namespace dpp_structures {
 
     class subcommand_group;
 
-    typedef std::function<void(const dpp::slashcommand_t&)> callback_t;
+    typedef std::function<dpp::task<void>(const dpp::slashcommand_t&)> callback_t;
 
 
     class command;
@@ -74,13 +74,15 @@ namespace dpp_structures {
         std::map<std::string, subcommand> subcommands_map{};
         std::map<std::string, subcommand_group> subcommand_groups_map{};
 
-        command(const std::string_view& _name, const std::string& _description, const dpp::snowflake& _application_id);
+        command(const std::string_view& name, const std::string& description, const dpp::snowflake& application_id,
+                dpp::permission permissions = dpp::p_use_application_commands);
 
-        command(const std::string_view& _name, const std::string& _description, const dpp::snowflake& _application_id,
-                const std::vector<subcommand_group>& subcommand_groups, const std::vector<subcommand>& subcommands);
+        command(const std::string_view& name, const std::string& description, const dpp::snowflake& application_id,
+                const std::vector<subcommand_group>& subcommand_groups, const std::vector<subcommand>& subcommands,
+                dpp::permission permissions = dpp::p_use_application_commands);
 
-        command(const std::string_view& _name, const std::string& _description, const dpp::snowflake& _application_id,
-                const std::vector<dpp::command_option>& options);
+        command(const std::string_view& name, const std::string& description, const dpp::snowflake& application_id,
+                const std::vector<dpp::command_option>& options, dpp::permission permissions = dpp::p_use_application_commands);
 
         //using slashcommand::slashcommand;
         using slashcommand::description;
@@ -89,13 +91,9 @@ namespace dpp_structures {
 
 
         // The base command has no action if there are subcommands or subcommand groups.
-        virtual dpp::task<void> callback(const dpp::slashcommand_t& event) = 0;
+        virtual dpp::task<void> callback(dpp::slashcommand_t event) = 0;
     };
 
-    class commands_utils {
-    public:
-
-    };
 
 }
 #endif//DPP_STRUCTURES_COMMAND_H

@@ -8,7 +8,7 @@
 #include <dpp/dpp.h>
 #include <vector>
 #include "command.h"
-#include "internal/concepts.h"
+#include "internal/meta.h"
 #include "listener.h"
 #include "utilities/singleton.h"
 
@@ -16,23 +16,27 @@ namespace dpp_structures {
     template<typename T>
     concept DerivedFromCommand = std::derived_from<T, command>;
 
-    template<DerivedFromCommand... Commands>
+    template<DerivedFromCommand... Commands> // TODO: require constructor(bot)
     class command_router : NEW_LISTENER(slashcommand_t, on_slashcommand),
                            public singleton<command_router<Commands...>> {
     public:
         std::unordered_map<std::string, command*> command_map;
 
+
     private:
+        command_router() = default;
+
         template<DerivedFromCommand Command, DerivedFromCommand... Rest>
         std::vector<dpp::slashcommand*> register_one() {
-            Command* command_ptr = new Command(this->bot);
+            Command* command_ptr = new Command(*this->bot); // This isn't deleted, it stays in command_map
 
             command_map[command_ptr->name] = command_ptr;
 
             std::vector<dpp::slashcommand*> commands_vector{dynamic_cast<dpp::slashcommand*>(command_ptr)};
 
+
             if constexpr (sizeof...(Rest) != 0) {
-                for (auto& rest_command_ptr : this->register_one<Rest...>(this->bot)) {
+                for (auto& rest_command_ptr : this->register_one<Rest...>()) {
                     commands_vector.push_back(rest_command_ptr);
                 }
             }
@@ -40,19 +44,22 @@ namespace dpp_structures {
             return commands_vector;
         }
 
+        FRIEND_SINGLETON(command_router<Commands...>)
+
+
     public:
         dpp::task<void> callback(const dpp::slashcommand_t& event) {
-            this->route_command(event);
+            co_await this->route_command(event);
         }
 
-        std::vector<dpp::slashcommand> register_all(dpp::cluster& bot) {
+        std::vector<dpp::slashcommand> register_all() {
             std::vector<dpp::slashcommand> v;
 
-            for (auto& command_ptr : this->register_one<Commands...>(bot)) {
+            for (auto& command_ptr : this->register_one<Commands...>()) {
                 v.push_back(*command_ptr);
             }
 
-            return std::move(v);
+            return v;
         }
 
         dpp::task<void> route_command(const dpp::slashcommand_t& event) {
@@ -102,7 +109,7 @@ namespace dpp_structures {
                         auto it = map.find(name);
                         if (it != map.end()) {
                             const auto& subcommand = it->second;
-                            subcommand.callback(event);
+                            co_await subcommand.callback(event);
                             co_return;
                         } else
                             std::cout << "subcommand not found" << std::endl;
@@ -110,8 +117,7 @@ namespace dpp_structures {
                         break;
                 }
             }
-
-            event.from->creator->log(dpp::ll_error, "Unable to route command: " + event.command.get_command_name());
+            event.from()->creator->log(dpp::ll_error, "Unable to route command: " + event.command.get_command_name());
             co_return;
         };
 

@@ -2,12 +2,13 @@
 // Created by backo on 17/06/25.
 //
 
-#include "service.h"
+#include "service_cli.h"
 #include "utilities/text.h"
 #include <array>
 #include <iostream>
 #include <subprocess.h>
 #include <utility>
+#include "internal/exec.h"
 
 using namespace dpp_structures;
 
@@ -35,10 +36,11 @@ service::execution_result service::start(const arguments& args) {
 
 	std::unique_ptr<FILE, std::function<void(FILE*)>> pipe(popen(command, "r"))
 }*/
-service::service(std::string executable_path) : executable_path(std::move(executable_path)) {}
+service_cli::service_cli(std::string executable_path) : executable_path(std::move(executable_path)) {}
 
-void service::exec(const arguments& args, std::function<void(execution_result)> callback) {
-	dpp::utility::exec(this->executable_path, args.list(),
+void service_cli::exec(const arguments& args, std::function<void(execution_output)> callback) {
+    std::cout << "executing command: " << this->executable_path << " " << args.join() << std::endl;
+	internal::exec(this->executable_path, args.list(),
 					   [callback = std::move(callback)](int exit_code, const std::string& output) {
 						   callback({output, exit_code});
 					   });
@@ -56,9 +58,10 @@ void service::exec(const arguments& args, std::function<void(execution_result)> 
 	return result;
 	*/
 }
-dpp::task<service::execution_result> service::run(arguments args) {
-	co_return co_await dpp::async<execution_result>(
-			[this, args = std::move(args)](std::function<void(execution_result)> callback) {
+dpp::task<service_cli::execution_output> service_cli::run(arguments args) {
+    std::cout << "await async" << std::endl;
+	co_return co_await dpp::async<execution_output>(
+			[this, args = std::move(args)](std::function<void(execution_output)> callback) {
 				this->exec(args, std::move(callback));
 			});
 }

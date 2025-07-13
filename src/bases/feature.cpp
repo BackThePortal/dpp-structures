@@ -4,6 +4,8 @@
 
 #include "feature.h"
 
+std::vector<dpp_structures::feature*> dpp_structures::feature::features{};
+
 void dpp_structures::feature::attach(dpp::cluster* _bot) {
     this->bot = _bot;
 }

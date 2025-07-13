@@ -5,7 +5,7 @@
 #ifndef DPP_STRUCTURES_INTERNAL_FILE_H
 #define DPP_STRUCTURES_INTERNAL_FILE_H
 
-#include "internal/concepts.h"
+#include "internal/meta.h"
 #include "internal/enums.h"
 #include "file.h"
 
@@ -14,7 +14,15 @@
 #include <type_traits>
 #include <utility>
 
+#define ASSERT_TYPE(expr) if(! expr) throw internal_file_wrong_type();
+
 namespace dpp_structures {
+    class internal_file_wrong_type : std::exception {
+    };
+
+    class internal_file_not_found : std::exception {
+    };
+
 
     struct internal_file_key_info {
         enum class value_type {
@@ -22,44 +30,74 @@ namespace dpp_structures {
         };
         std::string key;
         value_type type;
+
+        template<typename T>
+        [[nodiscard]] static inline bool is_same_type([[maybe_unused]] value_type type) { return false; };
+
+
+        [[nodiscard]] static bool is_same_type(value_type type, const nlohmann::json& json);
+
+        [[nodiscard]] inline bool is_same_type(const nlohmann::json& json) {
+            return is_same_type(this->type, json);
+        }
+
+        template<typename T>
+        [[nodiscard]] bool is_same_type() const { return is_same_type<T>(this->type); }
+
+
     };
 
+    template<>
+    inline bool internal_file_key_info::is_same_type<std::string>(value_type type) {
+        return type == value_type::STRING;
+    }
+
+    template<>
+    inline bool internal_file_key_info::is_same_type<dpp::snowflake>(value_type type) {
+        return type == value_type::SNOWFLAKE;
+    }
+
+    template<>
+    inline bool internal_file_key_info::is_same_type<long long>(value_type type) {
+        return type == value_type::INT;
+    }
+
+
     struct internal_file_value : internal_file_key_info {
+
+
         union {
             dpp::snowflake snowflake;
             int _int;
             std::string* string;
         };
 
-        internal_file_value(std::string key, value_type type, dpp::snowflake snowflake)
-                : internal_file_key_info(std::move(key), type), snowflake(snowflake) {}
+        internal_file_value(std::string key, value_type type, dpp::snowflake snowflake);
 
-        internal_file_value(std::string key, value_type type, int _int)
-                : internal_file_key_info(std::move(key), type), _int(_int) {}
+        internal_file_value(std::string key, value_type type, int _int);
 
-        internal_file_value(std::string key, value_type type, std::string* stringPtr)
-                : internal_file_key_info(std::move(key), type), string(stringPtr) {}
+        internal_file_value(std::string key, value_type type, std::string* stringPtr);
 
-        virtual ~internal_file_value();
+        static internal_file_value from_json(const nlohmann::json& json, const std::string& key, value_type type);
 
-        inline operator std::string&() const {// NOLINT(*-explicit-constructor)
-            assert(this->type == internal_file_key_info::value_type::STRING);
+        inline operator std::string() const {// NOLINT(*-explicit-constructor)
+            ASSERT_TYPE(this->is_same_type<std::string>());
             return *this->string;
         }
 
         inline operator int() const {// NOLINT(*-explicit-constructor)
-            assert(this->type == internal_file_key_info::value_type::INT);
+            ASSERT_TYPE(this->is_same_type<int>());
             return this->_int;
         }
 
         inline operator dpp::snowflake() const {// NOLINT(*-explicit-constructor)
-            assert(this->type == internal_file_key_info::value_type::SNOWFLAKE);
+            ASSERT_TYPE(this->is_same_type<dpp::snowflake>());
             return this->snowflake;
         }
+
+        virtual ~internal_file_value();
     };
 
-    class internal_file_wrong_type : std::exception {
-    };
 
     /**
      * Class to edit an internal JSON file with fixed keys and their types. Useful for easy editing of configuration files
@@ -72,54 +110,38 @@ namespace dpp_structures {
      * @tparam KeysEnum Keys of the JSON file.
      */
     template<typename FileClass, typename KeysEnum> requires std::is_enum_v<KeysEnum> &&
-                                                             std::is_integral_v<typename std::underlying_type<KeysEnum>::type> &&
+                                                             std::is_same_v<typename std::underlying_type<KeysEnum>::type, std::size_t> &&
                                                              std::is_base_of_v<json_file_base, FileClass>
     class internal_json_file : FileClass {
     private:
-        internal_file_key_info get_key_info(KeysEnum key) { return this->keys.at(to_underlying(key)); }
-
-#define SET_OVERLOAD(_name, _type)                                                                                     \
-    void _set(nlohmann::json& json, const internal_file_key_info& key_info, _type value) {                             \
-        if (key_info.type != internal_file_key_info::value_type::_name) throw internal_file_wrong_type();              \
-        json = value;                                                                                                  \
-    }
-
-        SET_OVERLOAD(STRING, std::string)
-
-        SET_OVERLOAD(SNOWFLAKE, dpp::snowflake)
-
-        SET_OVERLOAD(INT, int)
-
+        internal_file_key_info get_key_info(KeysEnum key) { return this->keys.at(internal::to_underlying(key)); }
 
     public:
-        using KeysArray = std::array<internal_file_key_info, to_underlying(KeysEnum::KEYS_LENGTH)>;
+        using keys_array = std::array<internal_file_key_info, internal::to_underlying(KeysEnum::KEYS_LENGTH)>;
 
-        const KeysArray& keys;
+        keys_array keys;
 
         /**
          *
          * @param path Path of the file relative to the executable.
          * @param keys An array that describes the JSON's keys in exactly the same order as KeysEnum.
          */
-        explicit internal_json_file(const std::string& path, const KeysArray& keys) : FileClass(path), keys(keys) {}
+        explicit internal_json_file(std::string path, const std::array<internal_file_key_info, internal::to_underlying(
+                KeysEnum::KEYS_LENGTH)>& keys) : FileClass(path), keys(keys) {}
 
-        internal_file_value get(KeysEnum key) {
+        [[nodiscard]] internal_file_value get(KeysEnum key) {
             static_assert(FileClass::actions & READ);
 
             internal_file_key_info key_info = this->get_key_info(key);
 
-            nlohmann::json obj = this->get_obj(key_info.key);
+            std::cout << "key: " << key_info.key << '\n';
 
-            switch (key_info.type) {
-                case internal_file_key_info::value_type::SNOWFLAKE:
-                    return {key_info.key, key_info.type, dpp::snowflake(obj.get<std::string>())};
-                case internal_file_key_info::value_type::STRING:
-                    return {key_info.key, key_info.type, new std::string(obj.get<std::string>())};
-                case internal_file_key_info::value_type::INT:
-                    return {key_info.key, key_info.type, obj.get<int>()};
-                default:
-                    assert(false);
-            }
+
+            std::optional<nlohmann::json> obj = this->get_obj(key_info.key);
+
+            if (obj == std::nullopt) throw internal_file_not_found();
+
+            return internal_file_value::from_json(obj.value(), key_info.key, key_info.type);
         }
 
         internal_file_value operator()(KeysEnum key) { return this->get(key); }
@@ -130,12 +152,14 @@ namespace dpp_structures {
 
             internal_file_key_info key_info = this->get_key_info(key);
 
-            nlohmann::json obj = this->get_obj(key_info.key);
+            ASSERT_TYPE(key_info.is_same_type<T>())
 
-            this->_set(obj, key_info, value);
+            std::optional<nlohmann::json> obj = this->get_obj(key_info.key);
+
+            FileClass::set(key_info.key, value);
 
             return this->get(key);
         }
     };
-}
+}// namespace dpp_structures
 #endif//DPP_STRUCTURES_INTERNAL_FILE_H

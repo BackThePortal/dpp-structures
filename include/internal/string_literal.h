@@ -7,6 +7,7 @@
 
 
 #include <algorithm>
+#include <string_view>
 
 namespace dpp_structures::internal {
 /**
@@ -16,7 +17,7 @@ namespace dpp_structures::internal {
     struct string_literal {
         char data[N]{};
 
-        consteval string_literal(const char (& str)[N]) { std::copy_n(str, N, data); }
+        consteval string_literal(const char (& str)[N]) { std::copy_n(str, N, data); } // NOLINT(*-explicit-constructor)
 
         consteval bool operator==(const string_literal<N> str) const {
             return std::equal(str.data, str.data + N, data);
@@ -38,6 +39,10 @@ namespace dpp_structures::internal {
         consteval char operator[](std::size_t n) const { return this->data[n]; }
 
         [[nodiscard]] consteval std::size_t size() const { return N - 1; }
+
+        constexpr operator std::string_view() const { // NOLINT(*-explicit-constructor)
+            return std::string_view(this->data, N - 1);
+        }
     };
 
     template<std::size_t s1, std::size_t s2>
