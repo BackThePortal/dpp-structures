@@ -32,6 +32,7 @@ add_library(dpp_structures STATIC
 
         src/message_sender.cpp
         src/command_router.cpp
+        src/utilities/cases.cpp
 
 )
 

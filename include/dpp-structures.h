@@ -28,6 +28,10 @@
 #include "utilities/text.h"
 #include "utilities/dynamic_value.h"
 #include "utilities/singleton.h"
+#include "utilities/cases.h"
+#include "utilities/text.h"
+#include "utilities/encode.h"
+#include "utilities/rsa.h"
 
 #include "internal/array.h"
 #include "internal/meta.h"
