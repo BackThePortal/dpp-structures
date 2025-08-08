@@ -34,6 +34,14 @@ add_library(dpp_structures STATIC
         src/command_router.cpp
         src/utilities/cases.cpp
 
+        src/json/std_serializers.cpp
+        src/json/macro_serializers.cpp
+        src/json/polymorphic_serializer.cpp
+        src/json/variant.cpp
+        include/utilities/bitmask.h
+        src/add_mentions.cpp
+        include/feature_adapter.h
+
 )
 
 target_compile_definitions(dpp_structures PUBLIC DPP_CORO)

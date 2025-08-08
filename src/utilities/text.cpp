@@ -4,7 +4,7 @@
 #include "utilities/text.h"
 
 
-std::vector<std::string> split_string(const std::string& str, const std::string& delimiter) {
+std::vector<std::string> dpp_structures::split_string(const std::string& str, const std::string& delimiter) {
     std::vector<std::string> strings;
 
     std::string::size_type pos = 0;

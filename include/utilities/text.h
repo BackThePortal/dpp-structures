@@ -7,6 +7,7 @@
 
 #include <string>
 #include <vector>
+#include <generator>
 
 namespace dpp_structures {
 
@@ -65,6 +66,7 @@ namespace dpp_structures {
     } 
     
     std::vector<std::string> split_string(const std::string& str, const std::string& delimiter);
+
     
     
 

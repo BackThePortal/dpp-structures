@@ -10,6 +10,8 @@
 #include "service_cli.h"
 #include "service_web.h"
 
+#include "feature_adapter.h"
+
 #include "on_ready.h"
 #include "on_slashcommand.h"
 
@@ -32,6 +34,7 @@
 #include "utilities/text.h"
 #include "utilities/encode.h"
 #include "utilities/rsa.h"
+#include "utilities/bitmask.h"
 
 #include "internal/array.h"
 #include "internal/meta.h"
@@ -39,5 +42,10 @@
 #include "internal/exec.h"
 #include "internal/functions.h"
 #include "internal/string_literal.h"
+
+#include "json/std_serializers.h"
+#include "json/macro_serializers.h"
+#include "json/variant.h"
+#include "json/polymorphic_serializer.h"
 
 #endif //DPP_STRUCTURES_DPP_STRUCTURES_H

@@ -16,14 +16,14 @@ std::vector<std::string> message_sender::slice(const std::string& text) {
 
     size_t last_length = 0;
     for (const auto& current_paragraph : paragraphs) {
-        if (current_paragraph.size() > message_sender::CHARACTER_LIMIT) throw message_sender::paragraph_too_long();
+        if (current_paragraph.size() + 1 > message_sender::CHARACTER_LIMIT) throw message_sender::paragraph_too_long();
 
-        if (last_length + current_paragraph.size() > CHARACTER_LIMIT) {
+        if (last_length + current_paragraph.size() + 1 > CHARACTER_LIMIT) {
             last_length = 0;
             messages.emplace_back("");
         }
 
-        last_length += current_paragraph.size();
+        last_length += current_paragraph.size() + 1;
         messages.back().append(current_paragraph + '\n');
     }
 

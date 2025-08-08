@@ -13,6 +13,8 @@ namespace dpp_structures::services {
 
     template<internal::string_literal BaseUrl, http::MethodType... Methods>
     class google_service : public http::service_web<BaseUrl, Methods...> {
+	protected:
+		using http::service_web<BaseUrl, Methods...>::query;
     private:
         dpp::task<void> pre_request(const std::string& url) override {
             google_service_account_manager::request_token_result result = co_await google_service_account_manager::get_instance()->get_or_refresh_token();
