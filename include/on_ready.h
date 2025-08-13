@@ -15,18 +15,19 @@ namespace dpp_structures {
     class on_ready : public listener<[](dpp::cluster& bot) { return &bot.on_ready; }> {
     private:
         dpp::task<void> callback(const dpp::ready_t& event) override {
-            if constexpr (RunOnce) {
-                if (dpp::run_once<struct dummy>()) co_await this->start(event);
-            } else co_await this->start();
+            if (!this->run_once || dpp::run_once<struct dummy>()) co_await this->start(event);
             co_return;
         };
+    public:
+        explicit on_ready(bool runOnce);
 
     protected:
+        const bool run_once;
         /**
          *
          * @see command_registerer
          */
-        virtual dpp::task<void> start(dpp::ready_t t) = 0;
+        virtual dpp::task<void> start(dpp::ready_t) = 0;
     };
 }
 
