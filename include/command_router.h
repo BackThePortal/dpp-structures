@@ -17,11 +17,10 @@ namespace dpp_structures {
     concept DerivedFromCommand = std::derived_from<T, command>;
 
     template<DerivedFromCommand... Commands> // TODO: require constructor(bot)
-    class command_router : NEW_LISTENER(slashcommand_t, on_slashcommand),
+    class command_router : on_slashcommand,
                            public singleton<command_router<Commands...>> {
     public:
         std::unordered_map<std::string, command*> command_map;
-
 
     private:
         command_router() = default;

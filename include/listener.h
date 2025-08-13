@@ -15,36 +15,44 @@
 
 namespace dpp_structures {
     using namespace internal;
+/**
+ * Abstract class to create listeners.
+ *
+ * The listener will be automatically attached for all instances.
+ *
+ * @tparam Trigger Function that returns a pointer to the dpp::event_router_t object from the bot instance.
+ */
+template<auto Trigger> requires std::is_invocable_v<decltype(Trigger), dpp::cluster&> &&
+                                internal::is_event_router<std::remove_pointer_t<std::invoke_result_t<decltype(Trigger), dpp::cluster&>>>::value
+class listener : feature {
+public:
+    using event_router = std::remove_pointer_t<std::invoke_result_t<decltype(Trigger), dpp::cluster&>>;
+    using event_type = internal::event_router_traits<event_router>::event_type;
 
-    template<typename T>
-    using EventRouter = dpp::event_router_t<T>& (*)(dpp::cluster&);
+private:
+    event_router& get_router() {
+        return *Trigger(*this->bot);
+    }
 
-    /**
-     * Abstract class to create listeners.
-     *
-     * The listener will be automatically attached for all instances.
-     *
-     * @tparam T Type of the D++ event.
-     * @tparam Trigger Function that returns the dpp::event_router_t object from the bot instance.
-     * @see on_ready
-     */
-    template<derived<dpp::event_dispatch_t> T, EventRouter<T> Trigger>
-    class listener : feature {
-    private:
-        void setup() override {
-            Trigger(*this->bot)([this](const T& event) -> dpp::task<void> {
-                if (this->filter(event)) co_await this->callback(event);
-                co_return;
-            });
-        };
+    void attach_event() {
+        this->get_router()([this](const event_type& event) -> dpp::task<void> {
+            if (this->filter(event)) co_await this->callback(event);
+            co_return;
+        });
+    }
 
-    protected:
-        using feature::bot;
+    void setup() override {
+        this->attach_event();
+    }
 
-        virtual bool filter(const T& event) { return true; }
+public:
+    using feature::bot;
 
-        virtual dpp::task<void> callback(const T&) = 0;
-    };
+    virtual bool filter(const event_type&) { return true; }
+
+    virtual dpp::task<void> callback(const event_type&) = 0;
+
+};
 
 }// namespace listeners
 

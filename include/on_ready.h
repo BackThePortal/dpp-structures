@@ -11,8 +11,8 @@
 
 namespace dpp_structures {
 
-    template<bool RunOnce = true>
-    class on_ready : public NEW_LISTENER(ready_t, on_ready) {
+
+    class on_ready : public listener<[](dpp::cluster& bot) { return &bot.on_ready; }> {
     private:
         dpp::task<void> callback(const dpp::ready_t& event) override {
             if constexpr (RunOnce) {
