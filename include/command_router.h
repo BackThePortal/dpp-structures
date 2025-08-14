@@ -17,7 +17,7 @@ namespace dpp_structures {
     concept DerivedFromCommand = std::derived_from<T, command>;
 
     template<DerivedFromCommand... Commands> // TODO: require constructor(bot)
-    class command_router : on_slashcommand,
+    class command_router : listener<&dpp::cluster::on_slashcommand>,
                            public singleton<command_router<Commands...>> {
     public:
         std::unordered_map<std::string, command*> command_map;

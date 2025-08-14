@@ -8,51 +8,52 @@
 #include "internal/meta.h"
 #include "feature.h"
 
-#define NEW_LISTENER(event_type, router_name)                                                                          \
-    listener<dpp::event_type,                                                                                          \
-             [](dpp::cluster& bot) -> dpp::event_router_t<dpp::event_type>& { return bot.router_name; }>
 
 
 namespace dpp_structures {
     using namespace internal;
-/**
- * Abstract class to create listeners.
- *
- * The listener will be automatically attached for all instances.
- *
- * @tparam Trigger Function that returns a pointer to the dpp::event_router_t object from the bot instance.
- */
-template<auto Trigger> requires std::is_invocable_v<decltype(Trigger), dpp::cluster&> &&
-                                internal::is_event_router<std::remove_pointer_t<std::invoke_result_t<decltype(Trigger), dpp::cluster&>>>::value
-class listener : feature {
-public:
-    using event_router = std::remove_pointer_t<std::invoke_result_t<decltype(Trigger), dpp::cluster&>>;
-    using event_type = internal::event_router_traits<event_router>::event_type;
 
-private:
-    event_router& get_router() {
-        return *Trigger(*this->bot);
-    }
 
-    void attach_event() {
-        this->get_router()([this](const event_type& event) -> dpp::task<void> {
-            if (this->filter(event)) co_await this->callback(event);
-            co_return;
-        });
-    }
+    /**
+     * Abstract class to create listeners. The listener will be automatically attached for all instances.
+     *
+     * @tparam EventRouter A pointer to a member field of dpp::cluster of type dpp::event_router_t.
+     */
+    template<auto EventRouter> requires std::is_member_pointer_v<decltype(EventRouter)> &&
+                                        internal::is_event_router<internal::member_type_t<decltype(EventRouter)>>::value
+    class listener : feature {
+    public:
+        /// @example on_slash_command, on_message_create, etc.
+        using event_router = internal::member_type_t<decltype(EventRouter)>;
+        /// @example dpp::slashcommand_t, dpp::message_create_t, etc.
+        using event_type = internal::event_router_traits<event_router>::event_type;
 
-    void setup() override {
-        this->attach_event();
-    }
+    private:
+        event_router& get_router() {
+            return this->bot->*EventRouter;
+        }
 
-public:
-    using feature::bot;
+        void attach_event() {
+            this->get_router()([this](const event_type& event) -> dpp::task<void> {
+                if (this->filter(event)) co_await this->callback(event);
+                co_return;
+            });
+        }
 
-    virtual bool filter(const event_type&) { return true; }
+        void setup() override {
+            this->attach_event();
+        }
 
-    virtual dpp::task<void> callback(const event_type&) = 0;
+    public:
+        using feature::bot;
 
-};
+        virtual bool filter(const event_type&) { return true; }
+
+        virtual dpp::task<void> callback(const event_type&) = 0;
+
+    };
+
+
 
 }// namespace listeners
 

@@ -74,28 +74,41 @@ namespace dpp_structures::internal {
 
         };
 
-        template<typename T>
-        requires MemberFunctionPointer<T>
+        template<typename T> requires MemberFunctionPointer<T>
         struct callable_info_helper<T> {
             using type = decltype(callable_info_detail(std::declval<T>()));
         };
 
-        template<typename T>
-        requires FunctionPointer<T>
+        template<typename T> requires FunctionPointer<T>
         struct callable_info_helper<T> {
             using type = decltype(callable_info_detail(std::declval<T>()));
         };
 
-        template<typename T>
-        requires Functor<T>
+        template<typename T> requires Functor<T>
         struct callable_info_helper<T> {
             using type = decltype(callable_info_detail(std::declval<decltype(&T::operator())>()));
         };
 
+        template<class T>
+        struct member_type_helper;
+
+        template<class C, class T>
+        struct member_type_helper<T C::*> {
+            using type = T;
+        };
     } // namespace detail
 
     template<typename T>
     using callable_info = typename detail::callable_info_helper<T>::type;
+
+
+    template<class T>
+    struct member_type
+            : detail::member_type_helper<typename std::remove_cvref<T>::type> {
+    };
+
+    template<class T>
+    using member_type_t = member_type<T>::type;
 
 
     template<typename T>
