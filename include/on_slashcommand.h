@@ -8,6 +8,6 @@
 #include "listener.h"
 
 namespace dpp_structures {
-    using on_slashcommand = listener<[](dpp::cluster& bot) { return &bot.on_slashcommand; }>;
+
 }
 #endif //DPP_STRUCTURES_ON_SLASH_COMMAND_H
