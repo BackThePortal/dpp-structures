@@ -40,7 +40,7 @@ add_library(dpp_structures STATIC
         src/json/variant.cpp
         include/utilities/bitmask.h
         src/add_mentions.cpp
-        include/feature_adapter.h
+        src/feature_adapter.cpp
 
 )
 

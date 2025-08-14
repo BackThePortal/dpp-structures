@@ -12,6 +12,7 @@
 namespace dpp_structures {
 
     /**
+     * Use this type when a value can be either constant or dependant on an internal_json_file.
      *
      * @tparam ConfigKeys Enum of the keys you used for your configuration file in internal_json_file.
      * @tparam T Type of the value.
