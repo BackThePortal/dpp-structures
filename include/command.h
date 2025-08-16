@@ -11,6 +11,9 @@
 #include <utility>
 #include <vector>
 
+#include "internal/string_literal.h"
+#include "internal/meta.h"
+#include "feature.h"
 /*
 // forward declaration
 namespace bot_errors {
@@ -23,6 +26,50 @@ namespace dpp_structures {
     class subcommand_group;
 
     typedef std::function<dpp::task<void>(const dpp::slashcommand_t&)> callback_t;
+
+
+    namespace next {
+
+        template<internal::string_literal Name, internal::string_literal Description>
+        class subcommand {
+            virtual dpp::task<void> callback(dpp::slashcommand_t event) = 0;
+        };
+
+        template<internal::string_literal Name, internal::string_literal Description, typename Derived>
+        class command : feature {
+
+        protected:
+
+        public:
+            using subcommand_t = dpp::task<void> (Derived::*)(dpp::slashcommand_t);
+
+            static consteval subcommand_t get_subcommand(std::size_t n) {
+                return Derived::subcommands[n];
+            }
+
+
+            virtual dpp::task<void> callback(dpp::slashcommand_t event) = 0;
+        };
+
+
+        class test_command : command<"test", "Some description", test_command> {
+
+            class something_subcommand : subcommand<"something", "Another description"> {
+                dpp::task<void> callback(dpp::slashcommand_t event) override {
+                    co_return;
+                }
+            };
+
+            dpp::task<void> something(dpp::slashcommand_t event) {
+
+            }
+            dpp::task<void> other(dpp::slashcommand_t event) {
+
+            }
+        public:
+            static constexpr subcommand_t subcommands[] = {&test_command::something, &test_command::other};
+        };
+    }
 
 
     class command;
@@ -82,7 +129,8 @@ namespace dpp_structures {
                 dpp::permission permissions = dpp::p_use_application_commands);
 
         command(const std::string_view& name, const std::string& description, const dpp::snowflake& application_id,
-                const std::vector<dpp::command_option>& options, dpp::permission permissions = dpp::p_use_application_commands);
+                const std::vector<dpp::command_option>& options,
+                dpp::permission permissions = dpp::p_use_application_commands);
 
         //using slashcommand::slashcommand;
         using slashcommand::description;
